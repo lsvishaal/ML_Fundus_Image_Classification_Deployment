@@ -1,0 +1,12 @@
+# Database files
+*.db
+
+# Model files
+*.pth
+
+# Environment variables
+.env
+
+# Directories
+files/
+__pycache__/
