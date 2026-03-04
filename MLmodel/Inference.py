@@ -1,7 +1,12 @@
+import torch
+import cv2
+import numpy as np
+from PIL import Image
+
 from MLmodel.gradcam import GradCAM
 from MLmodel.ModelDefenitions import ResNet_DINOv2_Hybrid
-import cv2
 from gloabal_vars import ML_MODEL_DIR
+
 
 def load_model():
     device = "cuda"
@@ -17,16 +22,10 @@ def load_model():
 
     return model, device ,gradcam
 
+
 def enable_gradcam(model):
     for p in model.resnet.parameters():
-        p.requires_grad = True 
-
-
-
-import torch
-import cv2
-import numpy as np
-from PIL import Image
+        p.requires_grad = True
 
 def infer_with_gradcam(
     image_path,

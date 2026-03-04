@@ -3,7 +3,10 @@ __pycache__/
 *.pyo
 *.pyd
 *.db
+*.pth
 venv/
+.venv/
 files/
 .env
 .git
+*.md
