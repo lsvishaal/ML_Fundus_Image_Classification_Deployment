@@ -1,6 +1,7 @@
 import torch
 import cv2
 
+
 class GradCAM:
     def __init__(self, model, target_layer):
         self.model = model
@@ -9,7 +10,9 @@ class GradCAM:
         self.activations = None
 
         self.fwd_handle = self.target_layer.register_forward_hook(self._forward_hook)
-        self.bwd_handle = self.target_layer.register_full_backward_hook(self._backward_hook)
+        self.bwd_handle = self.target_layer.register_full_backward_hook(
+            self._backward_hook
+        )
 
     def _forward_hook(self, module, input, output):
         self.activations = output

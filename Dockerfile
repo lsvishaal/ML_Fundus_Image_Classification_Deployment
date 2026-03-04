@@ -1,32 +1,45 @@
-# Match CUDA version with installed PyTorch wheels (cu126)
-FROM nvidia/cuda:12.6.3-cudnn-runtime-ubuntu24.04
+# syntax=docker/dockerfile:1
+
+FROM nvidia/cuda:12.6.3-cudnn-runtime-ubuntu24.04 AS builder
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
-# Install Python 3.12 only — combined in one RUN so cleanup doesn't bloat a separate layer
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3.12 \
     python3.12-venv \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy uv binary from the official image (no pip needed)
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
 WORKDIR /app
 
-# Layer caching: copy lockfiles first so this layer is only invalidated
-# when dependencies change — not on every source code change
+# Cache-friendly dependency layer: changes only when lockfiles change
 COPY pyproject.toml uv.lock .python-version ./
-
-# --mount=type=cache reuses the uv download cache across Docker builds
-# --locked ensures exact versions from uv.lock are used
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-install-project
 
-# Source code comes last — cache hit above is preserved on code-only changes
+FROM nvidia/cuda:12.6.3-cudnn-runtime-ubuntu24.04 AS runtime
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PATH="/app/.venv/bin:${PATH}"
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.12 \
+    python3.12-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy only the already-resolved virtualenv from builder
+COPY --from=builder /app/.venv /app/.venv
 COPY . .
+
+# Run as non-root in runtime container
+RUN useradd --create-home --shell /bin/bash appuser && chown -R appuser:appuser /app
+USER appuser
 
 EXPOSE 8000
 
-CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

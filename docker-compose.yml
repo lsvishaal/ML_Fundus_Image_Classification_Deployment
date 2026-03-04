@@ -1,0 +1,19 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fundus-api
+    user: "0:0"
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - fundus_files:/app/files
+      - ./assets:/app/assets:ro
+    gpus: all
+    restart: unless-stopped
+
+volumes:
+  fundus_files:
