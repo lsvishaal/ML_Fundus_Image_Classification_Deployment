@@ -6,17 +6,20 @@ export async function customFetch(endpoint: string, options: RequestInit = {}) {
     ...options,
     credentials: 'include',
   });
-  
+
   if (res.status === 401) {
-    // Handle global 401 unauth
     if (window.location.pathname !== '/login') {
       window.location.href = '/login';
     }
+    throw new Error('Authentication required. Please log in.');
   }
-  
+
   if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error(errorText || 'API request failed');
+    // FastAPI returns { detail: "..." } for error responses
+    const body = await res.json().catch(() => null);
+    const message = body?.detail || `Request failed (${res.status})`;
+    throw new Error(message);
   }
+
   return res.json();
 }
